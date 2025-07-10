@@ -29,8 +29,10 @@ param platformCIDRsize int = 21
 param platformConnectivityLzCIDRsize int = 23
 param platformIdentityLzCIDRsize int = 23
 
-// Application Landing Zone CIDR size
-// param applicationCIDRsize int = parseCidr()
+// Factor to divide the platform CIDR into application landing zone Corp and Online. in percentage
+@maxValue(100)
+@minValue(1)
+param applicationLzFactor int = 10
 
 var Regions = [
   for (region, i) in regions: {
@@ -76,6 +78,7 @@ module ipamPerRegion 'ipamPerRegion.bicep' = [
       platformCIDRsize: platformCIDRsize
       platformConnectivityLzCIDRsize: platformConnectivityLzCIDRsize
       platformIdentityLzCIDRsize: platformIdentityLzCIDRsize
+      applicationLzFactor: applicationLzFactor
     }
   }
 ]
