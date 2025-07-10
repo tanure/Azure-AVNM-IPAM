@@ -114,7 +114,7 @@ resource applicationLzCorpIpamPool 'Microsoft.Network/networkManagers/ipamPools@
   properties: {
     addressPrefixes: applicationLzCorpCIDRs
     parentPoolName: applicationLzIpamPool.name
-    displayName: 'Application Corp Landing Zones'
+    displayName: 'Corp'
     description: 'IPAM pool for Application Corp Landing Zones in ${regionDisplayName} region'
   }
 }
@@ -126,7 +126,7 @@ resource applicationLzOnlineIpamPool 'Microsoft.Network/networkManagers/ipamPool
   properties: {
     addressPrefixes: applicationLzOnlineCIDRs
     parentPoolName: applicationLzIpamPool.name
-    displayName: 'Application Online Landing Zones'
+    displayName: 'Online'
     description: 'IPAM pool for Application Online Landing Zones in ${regionDisplayName} region'
   }
 }
