@@ -12,7 +12,7 @@ param ipam _environment = {
     rootIPAMpoolName: 'AzureGlobal'
     AzureCIDR: '172.16.0.0/12'
     RegionCIDRsize: 16
-    RegionCIDRsplitSize: 24
+    RegionCIDRsplitSize: 21
   }
 }
 
