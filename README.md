@@ -285,12 +285,61 @@ az network manager ipam-pool show --name <pool-name> --network-manager-name <avn
 - Consider network security groups and Azure Firewall integration
 - Implement proper access controls for IPAM pool management
 
+## 📖 Documentation Deployment
+
+This repository includes a VuePress-powered documentation website that can be deployed to GitHub Pages.
+
+### Building Documentation
+
+To build the documentation locally:
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run docs:dev
+
+# Build for production
+npm run docs:build
+```
+
+### Deploying to GitHub Pages
+
+The documentation can be automatically deployed to the `gh-pages` branch using:
+
+```bash
+# Build and deploy to gh-pages branch
+npm run docs:deploy
+```
+
+### Enabling GitHub Pages
+
+After deploying, enable GitHub Pages in your repository settings:
+
+1. Go to your repository's **Settings** tab
+2. Navigate to the **Pages** section in the sidebar
+3. Under **Source**, select **Deploy from a branch**
+4. Choose the **gh-pages** branch and **/ (root)** folder
+5. Click **Save**
+
+The documentation will be available at: `https://<username>.github.io/Azure-AVNM-IPAM/`
+
+### For Contributors
+
+When contributing to this repository:
+
+1. Documentation changes should be made in the `docs/` directory
+2. The documentation site will automatically rebuild when changes are pushed to the main branch
+3. Contributors can test documentation changes locally using `npm run docs:dev`
+4. The documentation follows the same contribution workflow as the main codebase
+
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
+4. Test thoroughly (including documentation if applicable)
 5. Submit a pull request
 
 ## 📝 License

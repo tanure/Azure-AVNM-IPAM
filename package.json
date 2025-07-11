@@ -1,0 +1,36 @@
+{
+  "name": "azure-avnm-ipam",
+  "version": "1.0.0",
+  "description": "Azure Virtual Network Manager (AVNM) IP Address Management (IPAM) Solution for Azure Landing Zones",
+  "main": "index.js",
+  "scripts": {
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs",
+    "docs:deploy": "npm run docs:build && gh-pages -d docs/.vuepress/dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tanure/Azure-AVNM-IPAM.git"
+  },
+  "keywords": [
+    "azure",
+    "networking",
+    "ipam",
+    "avnm",
+    "landing-zones",
+    "bicep"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tanure/Azure-AVNM-IPAM/issues"
+  },
+  "homepage": "https://github.com/tanure/Azure-AVNM-IPAM#readme",
+  "devDependencies": {
+    "vuepress": "^2.0.0-rc.17",
+    "@vuepress/theme-default": "^2.0.0-rc.37",
+    "@vuepress/bundler-vite": "^2.0.0-rc.17",
+    "sass-embedded": "^1.77.6",
+    "gh-pages": "^6.1.1"
+  }
+}
