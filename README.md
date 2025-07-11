@@ -30,14 +30,14 @@ graph TD
     A --> C[Regional Pool - West Europe<br/>172.17.0.0/16]
     A --> D[Regional Pool - Other Regions<br/>172.x.0.0/16]
     
-    B --> E[Platform Landing Zones<br/>64 × /24 subnets<br/>25% allocation]
-    B --> F[Application Landing Zones<br/>192 × /24 subnets<br/>75% allocation]
+    B --> E[Platform Landing Zones<br/>26 × /24 subnets<br/>10% allocation]
+    B --> F[Application Landing Zones<br/>230 × /24 subnets<br/>90% allocation]
     
-    E --> G[Connectivity LZ<br/>32 × /24 subnets<br/>50% of platform]
-    E --> H[Identity LZ<br/>32 × /24 subnets<br/>50% of platform]
+    E --> G[Connectivity LZ<br/>13 × /24 subnets<br/>50% of platform]
+    E --> H[Identity LZ<br/>13 × /24 subnets<br/>50% of platform]
     
-    F --> I[Corp LZ<br/>115 × /24 subnets<br/>60% of application]
-    F --> J[Online LZ<br/>77 × /24 subnets<br/>40% of application]
+    F --> I[Corp LZ<br/>173 × /24 subnets<br/>75% of application]
+    F --> J[Online LZ<br/>57 × /24 subnets<br/>25% of application]
     
     style A fill:#2563eb,stroke:#1e40af,stroke-width:2px,color:#ffffff
     style B fill:#7c3aed,stroke:#5b21b6,stroke-width:2px,color:#ffffff
