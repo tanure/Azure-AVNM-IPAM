@@ -21,16 +21,16 @@ graph TD
     F --> I[Corp LZ<br/>115 × /24 subnets<br/>60% of application]
     F --> J[Online LZ<br/>77 × /24 subnets<br/>40% of application]
     
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
-    style C fill:#f3e5f5
-    style D fill:#f3e5f5
-    style E fill:#fff3e0
-    style F fill:#e8f5e8
-    style G fill:#ffebee
-    style H fill:#ffebee
-    style I fill:#f1f8e9
-    style J fill:#f1f8e9
+    style A fill:#2563eb,stroke:#1e40af,stroke-width:2px,color:#ffffff
+    style B fill:#7c3aed,stroke:#5b21b6,stroke-width:2px,color:#ffffff
+    style C fill:#7c3aed,stroke:#5b21b6,stroke-width:2px,color:#ffffff
+    style D fill:#7c3aed,stroke:#5b21b6,stroke-width:2px,color:#ffffff
+    style E fill:#dc2626,stroke:#991b1b,stroke-width:2px,color:#ffffff
+    style F fill:#059669,stroke:#047857,stroke-width:2px,color:#ffffff
+    style G fill:#ea580c,stroke:#c2410c,stroke-width:2px,color:#ffffff
+    style H fill:#ea580c,stroke:#c2410c,stroke-width:2px,color:#ffffff
+    style I fill:#16a34a,stroke:#15803d,stroke-width:2px,color:#ffffff
+    style J fill:#16a34a,stroke:#15803d,stroke-width:2px,color:#ffffff
 ```
 
 **Text Representation:**
