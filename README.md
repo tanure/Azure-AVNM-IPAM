@@ -6,12 +6,43 @@ This project provides an Azure Bicep template solution for deploying Azure Virtu
 
 The solution creates a hierarchical IPAM structure:
 
+```mermaid
+graph TD
+    A[Root IPAM Pool<br/>Azure CIDR Block<br/>172.16.0.0/12] --> B[Regional Pool - North Europe<br/>172.16.0.0/16]
+    A --> C[Regional Pool - West Europe<br/>172.17.0.0/16]
+    A --> D[Regional Pool - Other Regions<br/>172.x.0.0/16]
+    
+    B --> E[Platform Landing Zones<br/>64 × /24 subnets<br/>25% allocation]
+    B --> F[Application Landing Zones<br/>192 × /24 subnets<br/>75% allocation]
+    
+    E --> G[Connectivity LZ<br/>32 × /24 subnets<br/>50% of platform]
+    E --> H[Identity LZ<br/>32 × /24 subnets<br/>50% of platform]
+    
+    F --> I[Corp LZ<br/>115 × /24 subnets<br/>60% of application]
+    F --> J[Online LZ<br/>77 × /24 subnets<br/>40% of application]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#f3e5f5
+    style D fill:#f3e5f5
+    style E fill:#fff3e0
+    style F fill:#e8f5e8
+    style G fill:#ffebee
+    style H fill:#ffebee
+    style I fill:#f1f8e9
+    style J fill:#f1f8e9
+```
+
+**Text Representation:**
 ```
 Root IPAM Pool (Azure CIDR Block)
 └── Regional IPAM Pools (per region)
-    └── Platform Landing Zone Pool
-        ├── Connectivity Landing Zone Pool
-        └── Identity Landing Zone Pool
+    ├── Platform Landing Zone Pool
+    │   ├── Connectivity Landing Zone Pool
+    │   └── Identity Landing Zone Pool
+    └── Application Landing Zone Pool
+        ├── Corp Landing Zone Pool
+        └── Online Landing Zone Pool
 ```
 
 ## 📋 Features
@@ -19,8 +50,9 @@ Root IPAM Pool (Azure CIDR Block)
 - **Multi-region support**: Automatically creates IPAM pools for multiple Azure regions
 - **Hierarchical IP management**: Implements a structured approach to IP allocation
 - **Azure Landing Zone alignment**: Supports platform and application landing zone patterns
-- **Flexible CIDR sizing**: Configurable subnet sizes for different components
+- **Percentage-based allocation**: Flexible CIDR allocation using configurable percentage factors
 - **Automated subnet calculation**: Uses Azure Bicep CIDR functions for automatic IP allocation
+- **Dynamic sizing**: Adapts to different region CIDR sizes automatically
 
 ## 🚀 Quick Start
 
@@ -58,19 +90,20 @@ Root IPAM Pool (Azure CIDR Block)
 
 ### Main Parameters
 
-| Parameter                        | Type   | Default                    | Description                               |
-| -------------------------------- | ------ | -------------------------- | ----------------------------------------- |
-| `location`                       | string | `resourceGroup().location` | Azure region for AVNM deployment          |
-| `avnmName`                       | string | `'avnm01'`                 | Name of the Azure Virtual Network Manager |
-| `avnmSubscriptionScope`          | array  | `[subscription().id]`      | Subscriptions in AVNM scope               |
-| `avnmManagementGroupScope`       | array  | `[]`                       | Management groups in AVNM scope           |
-| `rootIPAMpoolName`               | string | `'Azure'`                  | Display name for root IPAM pool           |
-| `regions`                        | array  | See below                  | Array of regions to deploy                |
-| `AzureCIDR`                      | string | `'172.16.0.0/12'`          | Root Azure CIDR block                     |
-| `RegionCIDRsize`                 | int    | `16`                       | Subnet size for regional pools            |
-| `platformCIDRsize`               | int    | `21`                       | Subnet size for platform landing zones    |
-| `platformConnectivityLzCIDRsize` | int    | `23`                       | Subnet size for connectivity LZ           |
-| `platformIdentityLzCIDRsize`     | int    | `23`                       | Subnet size for identity LZ               |
+| Parameter                            | Type   | Default                    | Description                                           |
+| ------------------------------------ | ------ | -------------------------- | ----------------------------------------------------- |
+| `location`                           | string | `resourceGroup().location` | Azure region for AVNM deployment                      |
+| `avnmName`                           | string | `'avnm01'`                 | Name of the Azure Virtual Network Manager             |
+| `avnmSubscriptionScope`              | array  | `[subscription().id]`      | Subscriptions in AVNM scope                           |
+| `avnmManagementGroupScope`           | array  | `[]`                       | Management groups in AVNM scope                       |
+| `rootIPAMpoolName`                   | string | `'Azure'`                  | Display name for root IPAM pool                       |
+| `regions`                            | array  | See below                  | Array of regions to deploy                            |
+| `AzureCIDR`                          | string | `'172.16.0.0/12'`          | Root Azure CIDR block                                 |
+| `RegionCIDRsize`                     | int    | `16`                       | Subnet size for regional pools                        |
+| `regionCIDRsize`                     | int    | `24`                       | Target CIDR size for subdivision granularity          |
+| `PlatformAndApplicationSplitFactor`  | int    | `25`                       | % of region CIDRs allocated to platform (1-100)       |
+| `ConnectivityAndIdentitySplitFactor` | int    | `50`                       | % of platform CIDRs allocated to connectivity (1-100) |
+| `CorpAndOnlineSplitFactor`           | int    | `60`                       | % of application CIDRs allocated to corp (1-100)      |
 
 ### Regions Configuration
 
@@ -93,9 +126,19 @@ With default settings:
 - **Root CIDR**: `172.16.0.0/12` (172.16.0.0 - 172.31.255.255)
 - **Region 1**: `172.16.0.0/16` (North Europe)
 - **Region 2**: `172.17.0.0/16` (West Europe)
-- **Platform LZ**: `172.16.0.0/21` (per region)
-  - **Connectivity**: `172.16.0.0/23`
-  - **Identity**: `172.16.2.0/23`
+
+For each region with `/24` subdivision and `25%` platform allocation:
+- **Total /24 subnets available**: 256 (from /16 to /24)
+- **Platform allocation**: 64 subnets (25% of 256)
+- **Application allocation**: 192 subnets (75% of 256)
+
+**Platform Landing Zones** (with 50% connectivity split):
+- **Connectivity**: 32 /24 subnets
+- **Identity**: 32 /24 subnets
+
+**Application Landing Zones** (with 60% corp split):
+- **Corp**: 115 /24 subnets (60% of 192)
+- **Online**: 77 /24 subnets (40% of 192)
 
 ## 📁 Project Structure
 
@@ -119,18 +162,27 @@ Add new regions to the `regions` parameter:
 }
 ```
 
-### Modifying CIDR Sizes
+### Modifying Allocation Factors
 
-Adjust the CIDR size parameters based on your requirements:
+Adjust the percentage factors based on your requirements:
 
 ```bicep
-param RegionCIDRsize int = 14        // Larger regional pools
-param platformCIDRsize int = 19      // Smaller platform pools
+param PlatformAndApplicationSplitFactor int = 30    // 30% to platform, 70% to application
+param ConnectivityAndIdentitySplitFactor int = 40   // 40% connectivity, 60% identity
+param CorpAndOnlineSplitFactor int = 70             // 70% corp, 30% online
 ```
 
-### Adding Application Landing Zones
+### Changing Subdivision Granularity
 
-The `ipamPerRegion.bicep` template includes examples for application landing zone CIDR calculations that can be extended.
+Modify the `regionCIDRsize` to change the granularity of CIDR subdivision:
+
+```bicep
+param regionCIDRsize int = 22        // Creates /22 subnets instead of /24
+```
+
+### Regional IPAM Pool Configuration
+
+Each region can have different factor configurations by modifying the module parameters in `main.bicep`.
 
 ## 🔍 Monitoring and Management
 
@@ -189,3 +241,26 @@ For issues and questions:
 1. Check the [Issues](../../issues) section
 2. Review Azure documentation
 3. Contact your Azure support team for deployment-specific issues
+
+## 💡 Key Concepts
+
+### Percentage-Based Allocation
+
+The solution uses three percentage factors to dynamically allocate CIDR blocks:
+
+1. **PlatformAndApplicationSplitFactor**: Determines what percentage of the region's subdivided CIDRs go to platform vs application landing zones
+2. **ConnectivityAndIdentitySplitFactor**: Within platform, determines the split between connectivity and identity landing zones  
+3. **CorpAndOnlineSplitFactor**: Within application, determines the split between corporate and online landing zones
+
+### Dynamic Subdivision
+
+- The `regionCIDRsize` parameter controls the granularity of CIDR subdivision
+- For example, with a `/16` region CIDR and `regionCIDRsize` of `24`, you get 256 `/24` subnets to allocate
+- These subnets are then distributed based on the percentage factors
+
+### Hierarchical Structure
+
+Each level in the IPAM hierarchy can contain multiple CIDR blocks, providing flexibility and efficient IP space utilization:
+- Regional pools contain the full regional CIDR
+- Platform/Application pools contain arrays of allocated subnets
+- Landing zone pools contain their respective allocated subnets

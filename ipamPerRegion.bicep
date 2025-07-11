@@ -4,32 +4,61 @@ param regionCIDR string
 param rootIPAMpoolName string
 param avnmName string
 
-param platformCIDRsize int
-param platformConnectivityLzCIDRsize int
-param platformIdentityLzCIDRsize int
+// Azure Region CIDR size used to calculate the region CIDRs
+@maxValue(32)
+@minValue(8)
+param RegionCIDRspliSize int
+
+// Factor to divide the region CIDR into platform and application landing zones, in percentage
+@maxValue(100)
+@minValue(1)
+param PlatformAndApplicationSplitFactor int
+
+// Factor to divide the platform CIDR into connectivity and identity landing zones, in percentage
+@maxValue(100)
+@minValue(1)
+param ConnectivityAndIdentitySplitFactor int
 
 // Factor to divide the platform CIDR into application landing zone Corp and Online. in percentage
 @maxValue(100)
 @minValue(1)
-param applicationLzFactor int
+param CorpAndOnlineSplitFactor int
 
-// Calculate the total number of CIDR blocks available for the platform size
-// note: maximum array count is 800, so platformCIDRsize must be less than or equal to 25 (=512 CIDR blocks)
+// Calculate the total number of CIDR blocks available in the region
+// Using the RegionCIDRspliSize parameter to determine subdivision granularity
 var powersOfTwo = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
-var totalCIDRcount = powersOfTwo[platformCIDRsize - int(split(regionCIDR, '/')[1])]
+var currentRegionCIDRspliSize = int(split(regionCIDR, '/')[1])
+var subdivisionSize = RegionCIDRspliSize // Use the parameter directly for subdivision
+var totalSubnetCount = powersOfTwo[subdivisionSize - currentRegionCIDRspliSize]
 
-// Generate possible CIDR blocks for the platform size
-var totalCIDRs = [for i in range(0, totalCIDRcount): cidrSubnet(regionCIDR, platformCIDRsize, i)]
+// Generate all possible CIDR blocks for allocation
+var allSubnets = [for i in range(0, totalSubnetCount): cidrSubnet(regionCIDR, subdivisionSize, i)]
 
-// Calculate the platform CIDR block based on the region CIDR and platform CIDR size
-var platformLzCIDR = take(totalCIDRs, 1)[0]
-var platformConnectivityLzCIDR = cidrSubnet(platformLzCIDR, platformConnectivityLzCIDRsize, 0)
-var platformIdentityLzCIDR = cidrSubnet(platformLzCIDR, platformIdentityLzCIDRsize, 1)
+// Calculate how many subnets go to platform vs application based on the factor
+var platformSubnetCount = max(1, totalSubnetCount * PlatformAndApplicationSplitFactor / 100)
+var platformSubnets = take(allSubnets, platformSubnetCount)
+var applicationSubnets = skip(allSubnets, platformSubnetCount)
+
+// Create platform and application landing zone CIDRs using the allocated subnets
+// For platform: subdivide the platform subnets into smaller pieces for connectivity and identity
+var platformLzCIDRs = platformSubnets
+var platformSubCIDRsize = subdivisionSize + 3 // Create 8 smaller subnets within each platform subnet
+var platformSubCIDRcount = 8
+// Use the first platform subnet and subdivide it for connectivity and identity
+var platformFirstSubnet = platformSubnets[0]
+var platformSubCIDRs = [
+  for i in range(0, platformSubCIDRcount): cidrSubnet(platformFirstSubnet, platformSubCIDRsize, i)
+]
+
+// Calculate how many subnets go to connectivity vs identity based on the factor
+var platformConnectivityCount = max(1, platformSubCIDRcount * ConnectivityAndIdentitySplitFactor / 100)
+var platformConnectivityCIDRs = take(platformSubCIDRs, platformConnectivityCount)
+var platformIdentityCIDRs = skip(platformSubCIDRs, platformConnectivityCount)
 
 // Calculate the CIDRs for application landing zones
-var applicationLzCIDRs = skip(totalCIDRs, 1)
+var applicationLzCIDRs = applicationSubnets
 var totalRemainingCount = length(applicationLzCIDRs)
-var applicationLzCorpCount = totalRemainingCount * applicationLzFactor / 100
+var applicationLzCorpCount = totalRemainingCount * CorpAndOnlineSplitFactor / 100
 
 var applicationLzCorpCIDRs = take(applicationLzCIDRs, applicationLzCorpCount)
 var applicationLzOnlineCIDRs = skip(applicationLzCIDRs, applicationLzCorpCount)
@@ -54,13 +83,11 @@ resource regionIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01'
 }
 
 resource platformLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: replace(platformLzCIDR, '/', '-')
+  name: '${parseCidr(string(first(platformLzCIDRs))).network}-${parseCidr(string(last(platformLzCIDRs))).broadcast}'
   parent: avnm
   location: location
   properties: {
-    addressPrefixes: [
-      platformLzCIDR
-    ]
+    addressPrefixes: platformLzCIDRs
     parentPoolName: regionIpamPool.name
     displayName: 'Platform Landing Zones'
     description: 'IPAM pool for Platform Landing Zones in ${regionDisplayName} region'
@@ -68,13 +95,11 @@ resource platformLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07
 }
 
 resource platformConnectivityLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: replace(platformConnectivityLzCIDR, '/', '-')
+  name: '${parseCidr(string(first(platformConnectivityCIDRs))).network}-${parseCidr(string(last(platformConnectivityCIDRs))).broadcast}'
   parent: avnm
   location: location
   properties: {
-    addressPrefixes: [
-      platformConnectivityLzCIDR
-    ]
+    addressPrefixes: platformConnectivityCIDRs
     parentPoolName: platformLzIpamPool.name
     displayName: 'Connectivity'
     description: 'IPAM pool for Platform Connectivity Landing Zone in ${regionDisplayName} region'
@@ -82,13 +107,11 @@ resource platformConnectivityLzIpamPool 'Microsoft.Network/networkManagers/ipamP
 }
 
 resource platformIdentityLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: replace(platformIdentityLzCIDR, '/', '-')
+  name: '${parseCidr(string(first(platformIdentityCIDRs))).network}-${parseCidr(string(last(platformIdentityCIDRs))).broadcast}'
   parent: avnm
   location: location
   properties: {
-    addressPrefixes: [
-      platformIdentityLzCIDR
-    ]
+    addressPrefixes: platformIdentityCIDRs
     parentPoolName: platformLzIpamPool.name
     displayName: 'Identity'
     description: 'IPAM pool for Platform Identity Landing Zone in ${regionDisplayName} region'

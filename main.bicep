@@ -24,15 +24,25 @@ param AzureCIDR string = '172.16.0.0/12'
 // Azure Region CIDR size
 param RegionCIDRsize int = 16
 
-// Platform Landing Zone CIDR size
-param platformCIDRsize int = 21
-param platformConnectivityLzCIDRsize int = 23
-param platformIdentityLzCIDRsize int = 23
+// Used to calculate the region CIDRs based on this size
+@maxValue(32)
+@minValue(8)
+param RegionCIDRspliSize int = 21
 
 // Factor to divide the platform CIDR into application landing zone Corp and Online. in percentage
 @maxValue(100)
 @minValue(1)
-param applicationLzFactor int = 10
+param PlatformAndApplicationSplitFactor int = 10
+
+// Factor to divide the platform CIDR into application landing zone Corp and Online. in percentage
+@maxValue(100)
+@minValue(1)
+param ConnectivityAndIdentitySplitFactor int = 10
+
+// Factor to divide the platform CIDR into application landing zone Corp and Online. in percentage
+@maxValue(100)
+@minValue(1)
+param CorpAndOnlineSplitFactor int = 10
 
 var Regions = [
   for (region, i) in regions: {
@@ -75,10 +85,10 @@ module ipamPerRegion 'ipamPerRegion.bicep' = [
       location: region.name
       rootIPAMpoolName: rootIPAMpool.name
       avnmName: avnm.name
-      platformCIDRsize: platformCIDRsize
-      platformConnectivityLzCIDRsize: platformConnectivityLzCIDRsize
-      platformIdentityLzCIDRsize: platformIdentityLzCIDRsize
-      applicationLzFactor: applicationLzFactor
+      RegionCIDRspliSize: RegionCIDRspliSize
+      PlatformAndApplicationSplitFactor: PlatformAndApplicationSplitFactor
+      ConnectivityAndIdentitySplitFactor: ConnectivityAndIdentitySplitFactor
+      CorpAndOnlineSplitFactor: CorpAndOnlineSplitFactor
     }
   }
 ]
