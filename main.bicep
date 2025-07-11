@@ -1,83 +1,66 @@
+import { _environment, _regions } from './types.bicep'
+
 param location string = resourceGroup().location
 
-param avnmName string = 'avnm01'
-param avnmSubscriptionScope array = [subscription().id]
-param avnmManagementGroupScope array = []
+param ipam _environment = {
+  avnm: {
+    name: 'avnm01'
+    subscriptioNScopes: [subscription().id]
+    managementGroupScopes: []
+  }
+  settings: {
+    rootIPAMpoolName: 'AzureGlobal'
+    AzureCIDR: '172.16.0.0/12'
+    RegionCIDRsize: 16
+    RegionCIDRsplitSize: 24
+  }
+}
 
-param rootIPAMpoolName string = 'Azure'
-
-@maxLength(16)
-param regions array = [
+param regions _regions = [
   {
     name: 'northeurope'
     displayName: 'North Europe'
+    PlatformAndApplicationSplitFactor: 10
+    ConnectivityAndIdentitySplitFactor: 50
+    CorpAndOnlineSplitFactor: 75
+    cidr: cidrSubnet(ipam.settings.AzureCIDR, ipam.settings.RegionCIDRsize, 0)
   }
   {
     name: 'westeurope'
     displayName: 'West Europe'
-  }
-]
-
-// Azure CIDR block
-param AzureCIDR string = '172.16.0.0/12'
-
-// Azure Region CIDR size
-param RegionCIDRsize int = 16
-
-// Used to calculate the region CIDRs based on this size
-@maxValue(32)
-@minValue(8)
-param RegionCIDRspliSize int = 21
-
-// Factor to divide the platform CIDR into application landing zone Corp and Online. in percentage
-@maxValue(100)
-@minValue(1)
-param PlatformAndApplicationSplitFactor int = 10
-
-// Factor to divide the platform CIDR into application landing zone Corp and Online. in percentage
-@maxValue(100)
-@minValue(1)
-param ConnectivityAndIdentitySplitFactor int = 10
-
-// Factor to divide the platform CIDR into application landing zone Corp and Online. in percentage
-@maxValue(100)
-@minValue(1)
-param CorpAndOnlineSplitFactor int = 10
-
-var Regions = [
-  for (region, i) in regions: {
-    name: region.name
-    displayName: region.displayName
-    cidr: cidrSubnet(AzureCIDR, RegionCIDRsize, i)
+    PlatformAndApplicationSplitFactor: 10
+    ConnectivityAndIdentitySplitFactor: 50
+    CorpAndOnlineSplitFactor: 75
+    cidr: cidrSubnet(ipam.settings.AzureCIDR, ipam.settings.RegionCIDRsize, 1)
   }
 ]
 
 resource avnm 'Microsoft.Network/networkManagers@2024-07-01' = {
-  name: avnmName
+  name: ipam.avnm.name
   location: location
   properties: {
     networkManagerScopes: {
-      managementGroups: avnmManagementGroupScope
-      subscriptions: avnmSubscriptionScope
+      managementGroups: ipam.avnm.?managementGroupScopes
+      subscriptions: ipam.avnm.?subscriptioNScopes
     }
   }
 }
 
 resource rootIPAMpool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: replace(AzureCIDR, '/', '-')
+  name: replace(ipam.settings.AzureCIDR, '/', '-')
   parent: avnm
   location: location
   properties: {
     addressPrefixes: [
-      AzureCIDR
+      ipam.settings.AzureCIDR
     ]
-    displayName: rootIPAMpoolName
-    description: 'Root IPAM pool for Azure CIDR block (${AzureCIDR})'
+    displayName: ipam.settings.rootIPAMpoolName
+    description: 'Root IPAM pool for Azure CIDR block (${ipam.settings.AzureCIDR})'
   }
 }
 
 module ipamPerRegion 'ipamPerRegion.bicep' = [
-  for region in Regions: {
+  for region in regions: {
     name: 'ipamPerRegion-${region.name}'
     params: {
       regionDisplayName: region.displayName
@@ -85,12 +68,10 @@ module ipamPerRegion 'ipamPerRegion.bicep' = [
       location: region.name
       rootIPAMpoolName: rootIPAMpool.name
       avnmName: avnm.name
-      RegionCIDRspliSize: RegionCIDRspliSize
-      PlatformAndApplicationSplitFactor: PlatformAndApplicationSplitFactor
-      ConnectivityAndIdentitySplitFactor: ConnectivityAndIdentitySplitFactor
-      CorpAndOnlineSplitFactor: CorpAndOnlineSplitFactor
+      RegionCIDRsplitSize: ipam.settings.RegionCIDRsplitSize
+      PlatformAndApplicationSplitFactor: region.PlatformAndApplicationSplitFactor
+      ConnectivityAndIdentitySplitFactor: region.ConnectivityAndIdentitySplitFactor
+      CorpAndOnlineSplitFactor: region.CorpAndOnlineSplitFactor
     }
   }
 ]
-
-output RegionCIDRs array = Regions

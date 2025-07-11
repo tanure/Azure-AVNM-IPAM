@@ -7,28 +7,28 @@ param avnmName string
 // Azure Region CIDR size used to calculate the region CIDRs
 @maxValue(32)
 @minValue(8)
-param RegionCIDRspliSize int
+param RegionCIDRsplitSize int
 
 // Factor to divide the region CIDR into platform and application landing zones, in percentage
 @maxValue(100)
-@minValue(1)
+@minValue(0)
 param PlatformAndApplicationSplitFactor int
 
 // Factor to divide the platform CIDR into connectivity and identity landing zones, in percentage
 @maxValue(100)
-@minValue(1)
+@minValue(0)
 param ConnectivityAndIdentitySplitFactor int
 
 // Factor to divide the platform CIDR into application landing zone Corp and Online. in percentage
 @maxValue(100)
-@minValue(1)
+@minValue(0)
 param CorpAndOnlineSplitFactor int
 
 // Calculate the total number of CIDR blocks available in the region
-// Using the RegionCIDRspliSize parameter to determine subdivision granularity
+// Using the RegionCIDRsplitSize parameter to determine subdivision granularity
 var powersOfTwo = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512]
 var currentRegionCIDRspliSize = int(split(regionCIDR, '/')[1])
-var subdivisionSize = RegionCIDRspliSize // Use the parameter directly for subdivision
+var subdivisionSize = RegionCIDRsplitSize // Use the parameter directly for subdivision
 var totalSubnetCount = powersOfTwo[subdivisionSize - currentRegionCIDRspliSize]
 
 // Generate all possible CIDR blocks for allocation

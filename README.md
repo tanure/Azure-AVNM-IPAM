@@ -1,6 +1,6 @@
 # Azure Virtual Network Manager (AVNM) IP Address Management (IPAM) Solution
 
-This project provides an Azure Bicep template solution for deploying Azure Virtual Network Manager with hierarchical IP Address Management (IPAM) pools. The solution creates a structured IPAM hierarchy that supports Azure Landing Zone architectures across multiple regions.
+This project provides | `RegionCIDRsplitSize`                | int    | `24`                       | Target CIDR size for subdivision granularity (8-32)  |n Azure Bicep template solution for deploying Azure Virtual Network Manager with hierarchical IP Address Management (IPAM) pools. The solution creates a structured IPAM hierarchy that supports Azure Landing Zone architectures across multiple regions.
 
 ## 🏗️ Architecture Overview
 
@@ -100,10 +100,10 @@ Root IPAM Pool (Azure CIDR Block)
 | `regions`                            | array  | See below                  | Array of regions to deploy                            |
 | `AzureCIDR`                          | string | `'172.16.0.0/12'`          | Root Azure CIDR block                                 |
 | `RegionCIDRsize`                     | int    | `16`                       | Subnet size for regional pools                        |
-| `regionCIDRsize`                     | int    | `24`                       | Target CIDR size for subdivision granularity          |
-| `PlatformAndApplicationSplitFactor`  | int    | `25`                       | % of region CIDRs allocated to platform (1-100)       |
-| `ConnectivityAndIdentitySplitFactor` | int    | `50`                       | % of platform CIDRs allocated to connectivity (1-100) |
-| `CorpAndOnlineSplitFactor`           | int    | `60`                       | % of application CIDRs allocated to corp (1-100)      |
+| `RegionCIDRspliSize`                 | int    | `24`                       | Target CIDR size for subdivision granularity (8-32)   |
+| `PlatformAndApplicationSplitFactor`  | int    | `25`                       | % of region CIDRs allocated to platform (0-100)       |
+| `ConnectivityAndIdentitySplitFactor` | int    | `50`                       | % of platform CIDRs allocated to connectivity (0-100) |
+| `CorpAndOnlineSplitFactor`           | int    | `60`                       | % of application CIDRs allocated to corp (0-100)      |
 
 ### Regions Configuration
 
@@ -174,10 +174,10 @@ param CorpAndOnlineSplitFactor int = 70             // 70% corp, 30% online
 
 ### Changing Subdivision Granularity
 
-Modify the `regionCIDRsize` to change the granularity of CIDR subdivision:
+Modify the `RegionCIDRsplitSize` to change the granularity of CIDR subdivision:
 
 ```bicep
-param regionCIDRsize int = 22        // Creates /22 subnets instead of /24
+param RegionCIDRsplitSize int = 22        // Creates /22 subnets instead of /24
 ```
 
 ### Regional IPAM Pool Configuration
@@ -248,15 +248,16 @@ For issues and questions:
 
 The solution uses three percentage factors to dynamically allocate CIDR blocks:
 
-1. **PlatformAndApplicationSplitFactor**: Determines what percentage of the region's subdivided CIDRs go to platform vs application landing zones
-2. **ConnectivityAndIdentitySplitFactor**: Within platform, determines the split between connectivity and identity landing zones  
-3. **CorpAndOnlineSplitFactor**: Within application, determines the split between corporate and online landing zones
+1. **PlatformAndApplicationSplitFactor**: Determines what percentage of the region's subdivided CIDRs go to platform vs application landing zones (0-100%)
+2. **ConnectivityAndIdentitySplitFactor**: Within platform, determines the split between connectivity and identity landing zones (0-100%)
+3. **CorpAndOnlineSplitFactor**: Within application, determines the split between corporate and online landing zones (0-100%)
 
 ### Dynamic Subdivision
 
-- The `regionCIDRsize` parameter controls the granularity of CIDR subdivision
-- For example, with a `/16` region CIDR and `regionCIDRsize` of `24`, you get 256 `/24` subnets to allocate
+- The `RegionCIDRsplitSize` parameter controls the granularity of CIDR subdivision (valid range: 8-32)
+- For example, with a `/16` region CIDR and `RegionCIDRsplitSize` of `24`, you get 256 `/24` subnets to allocate
 - These subnets are then distributed based on the percentage factors
+- Percentage factors can range from 0-100, allowing for flexible allocation including 0% allocation to any category
 
 ### Hierarchical Structure
 
