@@ -13,11 +13,7 @@ module.exports = {
     
     // Navigation
     nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Quick Start', link: '/quick-start/' },
-      { text: 'Architecture', link: '/architecture/' },
-      { text: 'Configuration', link: '/configuration/' },
-      { text: 'Reference', link: '/reference/' }
+      { text: 'Home', link: '/' }     
     ],
     
     // Sidebar configuration
