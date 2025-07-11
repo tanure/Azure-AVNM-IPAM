@@ -5,7 +5,7 @@ param location string = resourceGroup().location
 param ipam _environment = {
   avnm: {
     name: 'avnm01'
-    subscriptioNScopes: [subscription().id]
+    subscriptionScopes: [subscription().id]
     managementGroupScopes: []
   }
   settings: {
@@ -26,8 +26,8 @@ param regions _regions = [
     cidr: cidrSubnet(ipam.settings.AzureCIDR, ipam.settings.RegionCIDRsize, 0)
   }
   {
-    name: 'westeurope'
-    displayName: 'West Europe'
+    name: 'swedencentral'
+    displayName: 'Sweden Central'
     PlatformAndApplicationSplitFactor: 10
     ConnectivityAndIdentitySplitFactor: 50
     CorpAndOnlineSplitFactor: 75
@@ -35,19 +35,19 @@ param regions _regions = [
   }
 ]
 
-resource avnm 'Microsoft.Network/networkManagers@2024-07-01' = {
+resource avnm 'Microsoft.Network/networkManagers@2024-05-01' = {
   name: ipam.avnm.name
   location: location
   properties: {
     networkManagerScopes: {
       managementGroups: ipam.avnm.?managementGroupScopes
-      subscriptions: ipam.avnm.?subscriptioNScopes
+      subscriptions: ipam.avnm.?subscriptionScopes
     }
   }
 }
 
-resource rootIPAMpool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: replace(ipam.settings.AzureCIDR, '/', '-')
+resource rootIPAMpool 'Microsoft.Network/networkManagers/ipamPools@2024-05-01' = {
+  name: 'root-${replace(replace(ipam.settings.AzureCIDR, '/', '-'), '.', '-')}'
   parent: avnm
   location: location
   properties: {

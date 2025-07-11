@@ -6,7 +6,7 @@ type _environment = {
 
 type _avnm = {
   name: string
-  subscriptioNScopes: string[]?
+  subscriptionScopes: string[]?
   managementGroupScopes: string[]?
 }
 

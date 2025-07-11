@@ -58,18 +58,18 @@ var platformIdentityCIDRs = skip(platformSubCIDRs, platformConnectivityCount)
 // Calculate the CIDRs for application landing zones
 var applicationLzCIDRs = applicationSubnets
 var totalRemainingCount = length(applicationLzCIDRs)
-var applicationLzCorpCount = totalRemainingCount * CorpAndOnlineSplitFactor / 100
+var applicationLzCorpCount = max(1, totalRemainingCount * CorpAndOnlineSplitFactor / 100)
 
 var applicationLzCorpCIDRs = take(applicationLzCIDRs, applicationLzCorpCount)
 var applicationLzOnlineCIDRs = skip(applicationLzCIDRs, applicationLzCorpCount)
 
-resource avnm 'Microsoft.Network/networkManagers@2024-07-01' existing = {
+resource avnm 'Microsoft.Network/networkManagers@2024-05-01' existing = {
   name: avnmName
 }
 
 // Root IPAM pool for the Azure region
-resource regionIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: replace(regionCIDR, '/', '-')
+resource regionIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-05-01' = {
+  name: 'region-${replace(replace(regionCIDR, '/', '-'), '.', '-')}'
   parent: avnm
   location: location
   properties: {
@@ -82,8 +82,8 @@ resource regionIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01'
   }
 }
 
-resource platformLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: '${parseCidr(string(first(platformLzCIDRs))).network}-${parseCidr(string(last(platformLzCIDRs))).broadcast}'
+resource platformLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-05-01' = {
+  name: 'platform-${replace(replace(location, ' ', '-'), '.', '-')}'
   parent: avnm
   location: location
   properties: {
@@ -94,8 +94,8 @@ resource platformLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07
   }
 }
 
-resource platformConnectivityLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: '${parseCidr(string(first(platformConnectivityCIDRs))).network}-${parseCidr(string(last(platformConnectivityCIDRs))).broadcast}'
+resource platformConnectivityLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-05-01' = {
+  name: 'platform-connectivity-${replace(replace(location, ' ', '-'), '.', '-')}'
   parent: avnm
   location: location
   properties: {
@@ -106,8 +106,8 @@ resource platformConnectivityLzIpamPool 'Microsoft.Network/networkManagers/ipamP
   }
 }
 
-resource platformIdentityLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: '${parseCidr(string(first(platformIdentityCIDRs))).network}-${parseCidr(string(last(platformIdentityCIDRs))).broadcast}'
+resource platformIdentityLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-05-01' = {
+  name: 'platform-identity-${replace(replace(location, ' ', '-'), '.', '-')}'
   parent: avnm
   location: location
   properties: {
@@ -118,8 +118,8 @@ resource platformIdentityLzIpamPool 'Microsoft.Network/networkManagers/ipamPools
   }
 }
 
-resource applicationLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: '${parseCidr(string(first(applicationLzCIDRs))).network}-${parseCidr(string(last(applicationLzCIDRs))).broadcast}'
+resource applicationLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-05-01' = {
+  name: 'application-${replace(replace(location, ' ', '-'), '.', '-')}'
   parent: avnm
   location: location
   properties: {
@@ -130,8 +130,8 @@ resource applicationLzIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024
   }
 }
 
-resource applicationLzCorpIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: '${parseCidr(string(first(applicationLzCorpCIDRs))).network}-${parseCidr(string(last(applicationLzCorpCIDRs))).broadcast}'
+resource applicationLzCorpIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-05-01' = {
+  name: 'application-corp-${replace(replace(location, ' ', '-'), '.', '-')}'
   parent: avnm
   location: location
   properties: {
@@ -142,8 +142,8 @@ resource applicationLzCorpIpamPool 'Microsoft.Network/networkManagers/ipamPools@
   }
 }
 
-resource applicationLzOnlineIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-07-01' = {
-  name: '${parseCidr(string(first(applicationLzOnlineCIDRs))).network}-${parseCidr(string(last(applicationLzOnlineCIDRs))).broadcast}'
+resource applicationLzOnlineIpamPool 'Microsoft.Network/networkManagers/ipamPools@2024-05-01' = {
+  name: 'application-online-${replace(replace(location, ' ', '-'), '.', '-')}'
   parent: avnm
   location: location
   properties: {
