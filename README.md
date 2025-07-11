@@ -182,9 +182,51 @@ For each region with `/24` subdivision and `10%` platform allocation:
 ```
 ├── main.bicep              # Main template with AVNM and root IPAM pool
 ├── ipamPerRegion.bicep     # Module for regional IPAM pool hierarchy
+├── docs/                   # Documentation (VuePress)
+├── package.json            # Node.js dependencies for documentation
 ├── README.md               # This file
 └── LICENSE                 # License file
 ```
+
+## 📖 Documentation
+
+This project includes comprehensive documentation built with VuePress and automatically deployed to GitHub Pages.
+
+### Local Documentation Development
+
+To work with the documentation locally:
+
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Start the development server**
+   ```bash
+   npm run docs:dev
+   ```
+   This will start a local development server at `http://localhost:8080/Azure-AVNM-IPAM/`
+
+3. **Build documentation**
+   ```bash
+   npm run docs:build
+   ```
+   This generates static files in `docs/.vuepress/dist/`
+
+### Automatic Deployment
+
+Documentation is automatically deployed to GitHub Pages via GitHub Actions:
+
+- **Trigger**: Pushes to the `main` branch
+- **Deployment**: Automatic via GitHub Actions workflow (`.github/workflows/deploy-docs.yml`)
+- **Live Site**: Available at `https://tanure.github.io/Azure-AVNM-IPAM/`
+
+The deployment workflow:
+1. Builds the VuePress documentation
+2. Deploys to GitHub Pages using the native GitHub Pages action
+3. Makes the documentation available at the GitHub Pages URL
+
+No manual intervention is required - documentation updates are deployed automatically when changes are pushed to the main branch.
 
 ## 🔧 Customization
 
