@@ -90,32 +90,51 @@ Root IPAM Pool (Azure CIDR Block)
 
 ### Main Parameters
 
-| Parameter                            | Type   | Default                    | Description                                           |
-| ------------------------------------ | ------ | -------------------------- | ----------------------------------------------------- |
-| `location`                           | string | `resourceGroup().location` | Azure region for AVNM deployment                      |
-| `avnmName`                           | string | `'avnm01'`                 | Name of the Azure Virtual Network Manager             |
-| `avnmSubscriptionScope`              | array  | `[subscription().id]`      | Subscriptions in AVNM scope                           |
-| `avnmManagementGroupScope`           | array  | `[]`                       | Management groups in AVNM scope                       |
-| `rootIPAMpoolName`                   | string | `'Azure'`                  | Display name for root IPAM pool                       |
-| `regions`                            | array  | See below                  | Array of regions to deploy                            |
-| `AzureCIDR`                          | string | `'172.16.0.0/12'`          | Root Azure CIDR block                                 |
-| `RegionCIDRsize`                     | int    | `16`                       | Subnet size for regional pools                        |
-| `RegionCIDRspliSize`                 | int    | `24`                       | Target CIDR size for subdivision granularity (8-32)   |
-| `PlatformAndApplicationSplitFactor`  | int    | `25`                       | % of region CIDRs allocated to platform (0-100)       |
-| `ConnectivityAndIdentitySplitFactor` | int    | `50`                       | % of platform CIDRs allocated to connectivity (0-100) |
-| `CorpAndOnlineSplitFactor`           | int    | `60`                       | % of application CIDRs allocated to corp (0-100)      |
+The solution uses strongly-typed parameters defined in `types.bicep`:
 
-### Regions Configuration
+| Parameter  | Type           | Description                                |
+| ---------- | -------------- | ------------------------------------------ |
+| `location` | string         | Azure region for AVNM deployment           |
+| `ipam`     | `_environment` | IPAM environment configuration (see below) |
+| `regions`  | `_regions`     | Array of regions to deploy (see below)     |
+
+#### IPAM Environment Configuration (`_environment`)
 
 ```bicep
-param regions array = [
+param ipam _environment = {
+  avnm: {
+    name: 'avnm01'                                    // Name of the Azure Virtual Network Manager
+    subscriptioNScopes: [subscription().id]          // Subscriptions in AVNM scope
+    managementGroupScopes: []                         // Management groups in AVNM scope (optional)
+  }
+  settings: {
+    rootIPAMpoolName: 'AzureGlobal'                  // Display name for root IPAM pool
+    AzureCIDR: '172.16.0.0/12'                       // Root Azure CIDR block
+    RegionCIDRsize: 16                               // Subnet size for regional pools
+    RegionCIDRsplitSize: 24                          // Target CIDR size for subdivision (8-32)
+  }
+}
+```
+
+#### Regions Configuration (`_regions`)
+
+```bicep
+param regions _regions = [
   {
-    name: 'northeurope'
-    displayName: 'North Europe'
+    name: 'northeurope'                              // Azure region name
+    displayName: 'North Europe'                     // Human-readable display name
+    PlatformAndApplicationSplitFactor: 10           // % allocated to platform (0-100)
+    ConnectivityAndIdentitySplitFactor: 50          // % of platform to connectivity (0-100)
+    CorpAndOnlineSplitFactor: 75                    // % of application to corp (0-100)
+    cidr: cidrSubnet(ipam.settings.AzureCIDR, ipam.settings.RegionCIDRsize, 0)  // Auto-calculated CIDR
   }
   {
     name: 'westeurope'
     displayName: 'West Europe'
+    PlatformAndApplicationSplitFactor: 10
+    ConnectivityAndIdentitySplitFactor: 50
+    CorpAndOnlineSplitFactor: 75
+    cidr: cidrSubnet(ipam.settings.AzureCIDR, ipam.settings.RegionCIDRsize, 1)
   }
 ]
 ```
@@ -127,18 +146,18 @@ With default settings:
 - **Region 1**: `172.16.0.0/16` (North Europe)
 - **Region 2**: `172.17.0.0/16` (West Europe)
 
-For each region with `/24` subdivision and `25%` platform allocation:
+For each region with `/24` subdivision and `10%` platform allocation:
 - **Total /24 subnets available**: 256 (from /16 to /24)
-- **Platform allocation**: 64 subnets (25% of 256)
-- **Application allocation**: 192 subnets (75% of 256)
+- **Platform allocation**: 26 subnets (10% of 256)
+- **Application allocation**: 230 subnets (90% of 256)
 
 **Platform Landing Zones** (with 50% connectivity split):
-- **Connectivity**: 32 /24 subnets
-- **Identity**: 32 /24 subnets
+- **Connectivity**: 13 /24 subnets
+- **Identity**: 13 /24 subnets
 
-**Application Landing Zones** (with 60% corp split):
-- **Corp**: 115 /24 subnets (60% of 192)
-- **Online**: 77 /24 subnets (40% of 192)
+**Application Landing Zones** (with 75% corp split):
+- **Corp**: 173 /24 subnets (75% of 230)
+- **Online**: 57 /24 subnets (25% of 230)
 
 ## 📁 Project Structure
 
@@ -153,36 +172,76 @@ For each region with `/24` subdivision and `25%` platform allocation:
 
 ### Adding More Regions
 
-Add new regions to the `regions` parameter:
+Add new regions to the `regions` parameter array:
 
 ```bicep
-{
-  name: 'eastus'
-  displayName: 'East US'
+param regions _regions = [
+  // ...existing regions...
+  {
+    name: 'eastus'
+    displayName: 'East US'
+    PlatformAndApplicationSplitFactor: 15
+    ConnectivityAndIdentitySplitFactor: 60
+    CorpAndOnlineSplitFactor: 80
+    cidr: cidrSubnet(ipam.settings.AzureCIDR, ipam.settings.RegionCIDRsize, 2)
+  }
+]
+```
+
+### Modifying IPAM Environment Settings
+
+Adjust the IPAM environment configuration:
+
+```bicep
+param ipam _environment = {
+  avnm: {
+    name: 'myCustomAVNM'
+    subscriptioNScopes: [subscription().id, '<additional-subscription-id>']
+    managementGroupScopes: ['<management-group-id>']
+  }
+  settings: {
+    rootIPAMpoolName: 'GlobalIP'
+    AzureCIDR: '10.0.0.0/8'                          // Different CIDR range
+    RegionCIDRsize: 14                               // Larger regional pools (/14 instead of /16)
+    RegionCIDRsplitSize: 22                          // Different subdivision granularity
+  }
 }
 ```
 
-### Modifying Allocation Factors
+### Modifying Regional Allocation Factors
 
-Adjust the percentage factors based on your requirements:
-
-```bicep
-param PlatformAndApplicationSplitFactor int = 30    // 30% to platform, 70% to application
-param ConnectivityAndIdentitySplitFactor int = 40   // 40% connectivity, 60% identity
-param CorpAndOnlineSplitFactor int = 70             // 70% corp, 30% online
-```
-
-### Changing Subdivision Granularity
-
-Modify the `RegionCIDRsplitSize` to change the granularity of CIDR subdivision:
+Adjust percentage factors per region for different allocation strategies:
 
 ```bicep
-param RegionCIDRsplitSize int = 22        // Creates /22 subnets instead of /24
+param regions _regions = [
+  {
+    name: 'northeurope'
+    displayName: 'North Europe - Production'
+    PlatformAndApplicationSplitFactor: 20           // More platform resources
+    ConnectivityAndIdentitySplitFactor: 30          // More identity resources
+    CorpAndOnlineSplitFactor: 90                    // Mostly corporate workloads
+    cidr: cidrSubnet(ipam.settings.AzureCIDR, ipam.settings.RegionCIDRsize, 0)
+  }
+  {
+    name: 'westeurope'
+    displayName: 'West Europe - Development'
+    PlatformAndApplicationSplitFactor: 5            // Minimal platform
+    ConnectivityAndIdentitySplitFactor: 50          // Balanced connectivity/identity
+    CorpAndOnlineSplitFactor: 20                    // Mostly online/external workloads
+    cidr: cidrSubnet(ipam.settings.AzureCIDR, ipam.settings.RegionCIDRsize, 1)
+  }
+]
 ```
 
-### Regional IPAM Pool Configuration
+### Type Validation Benefits
 
-Each region can have different factor configurations by modifying the module parameters in `main.bicep`.
+The typed parameters provide several advantages:
+
+- **Compile-time validation**: Invalid configurations are caught during Bicep compilation
+- **IntelliSense support**: Better development experience with auto-completion
+- **Range validation**: Percentage factors are automatically validated (0-100)
+- **CIDR size validation**: RegionCIDRsplitSize is validated (8-32)
+- **Documentation**: Type definitions serve as living documentation
 
 ## 🔍 Monitoring and Management
 
