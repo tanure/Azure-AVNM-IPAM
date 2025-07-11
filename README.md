@@ -121,15 +121,15 @@ The solution uses strongly-typed parameters defined in `types.bicep`:
 ```bicep
 param ipam _environment = {
   avnm: {
-    name: 'avnm01'                                    // Name of the Azure Virtual Network Manager
+    name: 'avnm01'                                   // Name of the Azure Virtual Network Manager
     subscriptioNScopes: [subscription().id]          // Subscriptions in AVNM scope
-    managementGroupScopes: []                         // Management groups in AVNM scope (optional)
+    managementGroupScopes: []                        // Management groups in AVNM scope (optional)
   }
   settings: {
     rootIPAMpoolName: 'AzureGlobal'                  // Display name for root IPAM pool
     AzureCIDR: '172.16.0.0/12'                       // Root Azure CIDR block
     RegionCIDRsize: 16                               // Subnet size for regional pools
-    RegionCIDRsplitSize: 24                          // Target CIDR size for subdivision (8-32)
+    RegionCIDRsplitSize: 21                          // Target CIDR size for subdivision (8-32)
   }
 }
 ```
@@ -139,7 +139,7 @@ param ipam _environment = {
 ```bicep
 param regions _regions = [
   {
-    name: 'northeurope'                              // Azure region name
+    name: 'northeurope'                             // Azure region name
     displayName: 'North Europe'                     // Human-readable display name
     PlatformAndApplicationSplitFactor: 10           // % allocated to platform (0-100)
     ConnectivityAndIdentitySplitFactor: 50          // % of platform to connectivity (0-100)
